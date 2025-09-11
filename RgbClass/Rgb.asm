@@ -12,7 +12,7 @@
 
 	; Heap Unused Pointers Pointers - Implemented as stack
 	HUBP qword ? ; Base pointer
-	HSP qword ? ; Top Pointer
+	HUSP qword ? ; Top Pointer
 .data
 	align 4
 	instances dword 128 dup(-1)
@@ -83,10 +83,14 @@ FreeRgbInstance proc
 					  ; [heap pointer - 2] -> last element begin position
 		jg fail_validation
 
-
+	free_pointer:
+		mov rax, HUSP
+		mov qword ptr[rax + 1], rcx ; mark pointer as free to use
+		inc HULength ; increment length
+		add HUSP, 8 ; move pointer by 8 bytes
 	fail_validation:
-	mov rax, -1
-	ret
+		mov rax, -1
+		ret
 
 	
 FreeRgbInstance endp
@@ -130,12 +134,18 @@ InitializeMemory proc
 		mov eax, isInitialized
 		cmp eax, 1
 		je finish_init
-	one_time_setup:
+	heap_init:
 		lea rax, instances 
 		dec rax  ; point to bottom of RGB stack, next cell can be used as memory
 		mov HBP, rax
 		mov HSP, rax
+	heap_unused_pointers_init:
+		lea rax, HU 
+		dec rax  ; point to bottom of RGB stack, next cell can be used as memory
+		mov HUBP, rax
+		mov HUSP, rax
 		mov isInitialized, 1
+
 	finish_init:
 		ret
 InitializeMemory endp
