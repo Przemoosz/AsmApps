@@ -68,9 +68,25 @@ CreateRGB proc
 		ret
 CreateRGB endp
 
-;
+; rcx - pointer to RGB
 FreeRgbInstance proc
-	
+	validate_pointer:
+		cmp HBP, HSP ; invalid pointer if heap is empty (heap pointer == heap base pointer)
+		je fail_validation
+
+		cmp HBP, rcx ; pointer can not point outside of heap (pointer < heap base pointer)
+		jle fail_validation
+
+		mov rax, HSP
+		sub rax, 2
+		cmp rax, rcx  ; pointer can not point outside of heap (pointer > [heap pointer - 2])
+					  ; [heap pointer - 2] -> last element begin position
+		jg fail_validation
+
+
+	fail_validation:
+	mov rax, -1
+	ret
 
 	
 FreeRgbInstance endp
