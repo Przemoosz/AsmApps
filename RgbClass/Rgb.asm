@@ -58,7 +58,7 @@ CreateRGB proc
 		mov byte ptr[rax], cl ; As HSP is pointing to top of RGB stack next value is free cell
 		mov byte ptr[rax+1], dl
 		mov byte ptr[rax+2], r8b
-		add HSP, 3	; Move pointer  by 2 bytes
+		add HSP, 3	; Move pointer by 3 bytes
 
 		ret ; preserve original pointer - return rax as pointer to instance
 
@@ -71,25 +71,46 @@ CreateRGB endp
 ; rcx - pointer to RGB
 FreeRgbInstance proc
 	validate_pointer:
-		cmp HBP, HSP ; invalid pointer if heap is empty (heap pointer == heap base pointer)
+		mov r8, HBP
+		mov r9, HSP
+		cmp r8, r9 ; invalid pointer if heap is empty (heap pointer == heap base pointer)
 		je fail_validation
 
-		cmp HBP, rcx ; pointer can not point outside of heap (pointer < heap base pointer)
+		cmp rcx, r8 ; pointer can not point outside of heap (pointer < heap base pointer)
 		jle fail_validation
 
 		mov rax, HSP
 		sub rax, 2
-		cmp rax, rcx  ; pointer can not point outside of heap (pointer > [heap pointer - 2])
+		cmp rcx, rax  ; pointer can not point outside of heap (pointer > [heap pointer - 2])
 					  ; [heap pointer - 2] -> last element begin position
 		jg fail_validation
+		
+		; adress should be mod 3 == 0
+		mov rax, HBP
+		mov rdx, rcx
+		inc rdx
+		inc rax
+		sub rdx, rax ; relative pointer to HBP
+		mov rbx, 3 ; set divisor low to 3
+		mov rax, rdx ; set dividend low
+		mov rdx, 0 ; set dividend high to 0
+		div rbx
+		cmp rdx, 0 ; compare rest with 0
+		jne fail_validation ; check if rdx % 3 == 0
+
+		
+		
 
 	free_pointer:
 		mov rax, HUSP
 		mov qword ptr[rax + 1], rcx ; mark pointer as free to use
 		inc HULength ; increment length
 		add HUSP, 8 ; move pointer by 8 bytes
+		mov rax, 1 ; return true
+		ret
+
 	fail_validation:
-		mov rax, -1
+		mov rax, 0 ; return false
 		ret
 
 	
