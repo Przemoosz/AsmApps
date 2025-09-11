@@ -6,11 +6,18 @@
 	rgbMax equ 255
 	errorCode equ -1
 .data?
-	IBP qword ? ; Base pointer
-	ISP qword ? ; Top Pointer
+	; RGB Heap Pointers
+	HBP qword ? ; Base pointer
+	HSP qword ? ; Top Pointer
+
+	; Heap Unused Pointers Pointers - Implemented as stack
+	HUBP qword ? ; Base pointer
+	HSP qword ? ; Top Pointer
 .data
 	align 4
 	instances dword 128 dup(-1)
+	HU qword 16 dup(0)
+	HULength qword 0
 	isInitialized dword 0
 	rgbString byte "R: %d, G: %d, B: %d", 10, 0
 .code
@@ -46,12 +53,12 @@ CreateRGB proc
 		pop rcx
 	
 	create_instance:
-	    mov rax, ISP 
+	    mov rax, HSP 
 		inc rax
-		mov byte ptr[rax], cl ; As ISP is pointing to top of RGB stack next value is free cell
+		mov byte ptr[rax], cl ; As HSP is pointing to top of RGB stack next value is free cell
 		mov byte ptr[rax+1], dl
 		mov byte ptr[rax+2], r8b
-		add ISP, 3	; Move pointer  by 2 bytes
+		add HSP, 3	; Move pointer  by 2 bytes
 
 		ret ; preserve original pointer - return rax as pointer to instance
 
@@ -60,6 +67,13 @@ CreateRGB proc
 		mov rsp, r12 ; restore stack pointer if was changed
 		ret
 CreateRGB endp
+
+;
+FreeRgbInstance proc
+	
+
+	
+FreeRgbInstance endp
 
 ; rcx - pointer to RGB
 RgbToString proc
@@ -103,8 +117,8 @@ InitializeMemory proc
 	one_time_setup:
 		lea rax, instances 
 		dec rax  ; point to bottom of RGB stack, next cell can be used as memory
-		mov IBP, rax
-		mov ISP, rax
+		mov HBP, rax
+		mov HSP, rax
 		mov isInitialized, 1
 	finish_init:
 		ret
