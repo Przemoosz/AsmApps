@@ -6,11 +6,11 @@
 	rgbMax equ 255
 	errorCode equ -1
 .data?
-	; RGB Heap Pointers
+	; RGB Heap - Pointers 
 	HBP qword ? ; Base pointer
 	HSP qword ? ; Top Pointer
 
-	; Heap Unused Pointers Pointers - Implemented as stack
+	; Heap Unused Pointers Stack
 	HUBP qword ? ; Base pointer
 	HUSP qword ? ; Top Pointer
 .data
@@ -52,15 +52,24 @@ CreateRGB proc
 		pop rdx
 		pop rcx
 	
-	create_instance:
-	    mov rax, HSP 
-		inc rax
+	create_and_save_instance:
+		call GetFreePointer
 		mov byte ptr[rax], cl ; As HSP is pointing to top of RGB stack next value is free cell
 		mov byte ptr[rax+1], dl
 		mov byte ptr[rax+2], r8b
-		add HSP, 3	; Move pointer by 3 bytes
+
+		cmp rax, HSP
+		jg increment_hsp ; if heap head pointer was used move it by 3 positions
+		ret
+	
 
 		ret ; preserve original pointer - return rax as pointer to instance
+
+	increment_hsp:
+		mov rcx, HSP
+		add rcx, 3
+		mov HSP, rcx
+		ret
 
 	handle_arg_error:
 		mov rax, errorCode
@@ -84,6 +93,8 @@ FreeRgbInstance proc
 		cmp rcx, rax  ; pointer can not point outside of heap (pointer > [heap pointer - 2])
 					  ; [heap pointer - 2] -> last element begin position
 		jg fail_validation
+		je free_element_from_head	; free pointer by decrementing HSP by 2
+
 		
 		; adress should be mod 3 == 0
 		mov rax, HBP
@@ -105,11 +116,17 @@ FreeRgbInstance proc
 		mov rax, 1 ; return true
 		ret
 
+	free_element_from_head:
+		mov rax, HSP
+		sub rax, 3
+		mov HSP, rax
+		mov rax, 1 ; return true
+		ret
+
 	fail_validation:
 		mov rax, 0 ; return false
 		ret
 
-	
 FreeRgbInstance endp
 
 ; rcx - pointer to RGB
@@ -167,4 +184,26 @@ InitializeMemory proc
 		ret
 InitializeMemory endp
 
+; rax -> free pointer
+GetFreePointer proc
+	mov rax, HULength
+	cmp rax, 0
+	jne reuse_pointer
+
+	get_next_free_pointer:
+		mov rax, HSP
+		inc rax ; as it is poinitng to top element last byte in memory we need to increment by 1
+		ret
+	reuse_pointer:
+		mov rcx, HUSP
+		mov rax, qword ptr[rcx - 7]
+
+		; pop pointer from stack
+		sub rcx, 8 ; get last element pointer from HU
+
+		mov HUSP, rcx ; decrement HU pointer by 8 
+		dec HULength 
+		ret	
+
+GetFreePointer endp
 end
