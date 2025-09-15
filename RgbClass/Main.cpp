@@ -13,7 +13,7 @@ int main()
 	int* first = CreateRGB(10, 11, 12);
 	int* second = CreateRGB(13, 14, 15);
 	RgbToString(first);
-	bool success = FreeRgbInstance(second);
+	bool success = FreeRgbInstance(first);
 	cout << success;
 	//int* second = CreateRGB(13, 14, 15);
 	//RgbToString(second);

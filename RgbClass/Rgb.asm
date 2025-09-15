@@ -38,7 +38,7 @@ CreateRGB proc
 		push rcx
 		mov rcx, rdx
 
-		call ValidateArgument ; Validate rdx  (G)
+		call ValidateArgument ; Validate rdx (G)
 		cmp rax, -1
 		je handle_arg_error
 		push rcx
@@ -88,7 +88,6 @@ FreeRgbInstance proc
 		; adress should be mod 3 == 0
 		mov rax, HBP
 		mov rdx, rcx
-		inc rdx
 		inc rax
 		sub rdx, rax ; relative pointer to HBP
 		mov rbx, 3 ; set divisor low to 3
@@ -98,10 +97,7 @@ FreeRgbInstance proc
 		cmp rdx, 0 ; compare rest with 0
 		jne fail_validation ; check if rdx % 3 == 0
 
-		
-		
-
-	free_pointer:
+	mark_pointer_as_free:
 		mov rax, HUSP
 		mov qword ptr[rax + 1], rcx ; mark pointer as free to use
 		inc HULength ; increment length
